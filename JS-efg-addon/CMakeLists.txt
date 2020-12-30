@@ -6,22 +6,22 @@ project (efg-addon)
 
 set(LIB_OPT ON)
 # set macro-directory and find scripts
-set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/XML-parser/cmake/")
+set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/EFG/cmake/")
 # include cmake custom functions
 set(WITH_SOURCE_TREE ON)
 include(GroupSources)
 include(AutoCollect)
 include(Log)
 include(SetInstallRPath)
-add_subdirectory(XML-parser/Lib)
+add_subdirectory(EFG/Lib)
 
 include_directories(${CMAKE_JS_INC})
-file(GLOB SOURCE_FILES "src/xmlAddon.cc" "src/OptionalString.cpp" "src/JsonArrayStream.cpp")
+file(GLOB SOURCE_FILES "src/efgAddon.cc")
 add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES} ${CMAKE_JS_SRC})
 set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "" SUFFIX ".node")
 target_link_libraries(${PROJECT_NAME} 
 			${CMAKE_JS_LIB}
-			XMLPrs::XML-Parser
+			EFG::Easy-Factor-Graph
 		     )
 
 # Include N-API wrappers
