@@ -1,4 +1,5 @@
 #include "../efgAddon.h"
+#include "VariableFinder.h"
 #include <iostream>
 using namespace Napi;
 
@@ -106,7 +107,7 @@ Napi::Value efgJS::ProcessRequest(const Napi::CallbackInfo& info){
 
 
 
-void efgJS::Import(const std::string& fileName) {
+bool efgJS::Import(const std::string& fileName) {
   std::unique_ptr<EFG::model::Graph> model;
   try {
     model = std::make_unique<EFG::model::Graph>(fileName);
@@ -117,13 +118,14 @@ void efgJS::Import(const std::string& fileName) {
   if(nullptr != model) {
     this->graph = std::move(model);
     this->isolatedVars.clear();
+    return true;
   }
+  return false;
 }
 
-void efgJS::Append(const std::string& fileName) {
+bool efgJS::Append(const std::string& fileName) {
   if(nullptr == this->graph){
-    this->Import(fileName);
-    return;
+    return this->Import(fileName);
   }
 
   std::unique_ptr<EFG::model::Graph> model;
@@ -136,7 +138,9 @@ void efgJS::Append(const std::string& fileName) {
   if(nullptr != model) {
     this->graph->Insert(model->GetStructure());
     this->isolatedVars.clear();
+    return true;
   }
+  return false;
 }
 
 void efgJS::Export(const std::string& fileName){
@@ -144,15 +148,18 @@ void efgJS::Export(const std::string& fileName){
   this->graph->Reprint(fileName);
 }
 
-void efgJS::CreateIsolatedVar(const std::string& name, const std::size_t& size){
-  if((nullptr != this->graph) && (nullptr != this->graph->FindVariable(name))) return;
-  EFG::CategoricVariable var(size, name);
-  if(this->isolatedVars.find(var) != this->isolatedVars.end()) return;
-  this->isolatedVars.emplace(var);
+bool efgJS::CreateIsolatedVar(const std::string& name, const std::size_t& size){
+  VariableFinder finder(*this, name);
+  if(nullptr == finder) {
+    this->isolatedVars.emplace(name , EFG::CategoricVariable(size, name));
+    return true;
+  }
+  finder.release();
+  return false;
 }
 
-void efgJS::AddObservation(const std::vector<std::pair<std::string, std::size_t>>& obs) {
-  if(nullptr == this->graph) return;
+bool efgJS::AddObservation(const std::vector<std::pair<std::string, std::size_t>>& obs) {
+  if(nullptr == this->graph) return false;
   auto obOld = this->graph->GetObservationSet();
   std::vector<std::pair<std::string, std::size_t>> ob;
   ob.reserve(obOld.size() + obs.size());
@@ -166,11 +173,13 @@ void efgJS::AddObservation(const std::vector<std::pair<std::string, std::size_t>
     }
   }
   this->graph->SetEvidences(ob);
+  return true;
 }
 
-void efgJS::DeleteObservation(){
-  if(nullptr == this->graph) return;
+bool efgJS::DeleteObservation(){
+  if(nullptr == this->graph) return false;
   this->graph->SetEvidences(std::vector<std::pair<std::string, std::size_t>>{});
+  return true;
 }
 
 std::vector<float> efgJS::GetMarginals(const std::string& name) {
@@ -195,6 +204,75 @@ std::vector<std::size_t> efgJS::GetMap() {
     return  {};
   }
   return map;
+}
+
+bool efgJS::AddFactor(const std::string& name, const std::string& fileName, const float& weight) {
+  VariableFinder finder(*this, name);
+  if(nullptr == finder) return false;
+
+  try {
+    EFG::pot::Factor pot({finder.get()}, fileName);
+    if(nullptr == this->graph) this->graph = std::make_unique<EFG::model::Graph>();
+    if(0.f == weight) {
+      this->graph->InsertMove(pot);
+    }
+    else {
+      this->graph->InsertMove(EFG::pot::ExpFactor(pot, weight));
+    }
+  }
+  catch(...) {
+    finder.release();
+    return false;
+  }
+  return true;
+}
+
+bool efgJS::AddFactor(const std::string& nameA, const std::string& nameB, const std::string& fileName, const float& weight) {
+  VariableFinder finderA(*this, nameA);
+  if(nullptr == finderA) return false;
+  VariableFinder finderB(*this, nameB);
+  if(nullptr == finderB) return false;
+
+  try {
+    EFG::pot::Factor pot({finderA.get(), finderB.get()}, fileName);
+    if(nullptr == this->graph) this->graph = std::make_unique<EFG::model::Graph>();
+    if(0.f == weight) {
+      this->graph->InsertMove(pot);
+    }
+    else {
+      this->graph->InsertMove(EFG::pot::ExpFactor(pot, weight));
+    }
+  }
+  catch(...) {
+    finderA.release();
+    finderB.release();
+    return false;
+  }
+  return true;
+}
+
+bool efgJS::AddFactor(const std::string& nameA, const std::string& nameB, const bool& corr_anti, const float& weight) {
+  VariableFinder finderA(*this, nameA);
+  if(nullptr == finderA) return false;
+  VariableFinder finderB(*this, nameB);
+  if(nullptr == finderB) return false;
+
+  try {
+    EFG::pot::Factor pot(std::vector<EFG::CategoricVariable*>{finderA.get(), finderB.get()}, corr_anti);
+    if(nullptr == this->graph) this->graph = std::make_unique<EFG::model::Graph>();
+    if(0.f == weight) {
+      this->graph->InsertMove(pot);
+    }
+    else {
+      this->graph->InsertMove(EFG::pot::ExpFactor(pot, weight));
+    }
+  }
+  catch(...) {
+    finderA.release();
+    finderB.release();
+    return false;
+  }
+  return true;
 }
 
 Napi::Object efgJS::Init(Napi::Env env, Napi::Object exports) {
