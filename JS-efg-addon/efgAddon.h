@@ -11,7 +11,7 @@ public:
     Napi::Value ProcessRequest(const Napi::CallbackInfo&);
 
 private:
-    const std::string& getJSON();
+    //const std::string& getJSON();
 
     // the below methods return true if the json describing the graph should be updated
 
@@ -38,7 +38,8 @@ private:
     bool AddFactor(const std::string& nameA, const std::string& nameB, const bool& corr_anti, const float& weight = 0.f);
 
 private:
-    std::map<std::string, std::function<std::string(const Napi::CallbackInfo&)>> commands;
+    class Command;
+    std::map<char, std::function<std::string(const Command&)>> commands;
 
     class VariableFinder;
 // data

@@ -1,22 +1,8 @@
 #include "../efgAddon.h"
 #include "VariableFinder.h"
+#include "Command.h"
 #include <iostream>
 using namespace Napi;
-
-#define ARGS_CHECK(NUMBERS_EXPECTED) \
-  Napi::Env env = info.Env(); \
-    if (info.Length() != NUMBERS_EXPECTED) { \
-      Napi::TypeError::New(env, "Wrong number of arguments")\
-      .ThrowAsJavaScriptException();\
-  }
-
-#define STRING_CHECK(POSITION) \
-    if (!info[POSITION].IsString()) { \
-      Napi::TypeError::New(env, "input should be a string") \
-      .ThrowAsJavaScriptException();\
-  }
-
-#define AS_STRING(POSITION) std::string(info[POSITION].As<Napi::String>().Utf8Value())
 
 bool operator<(const EFG::CategoricVariable& a, const EFG::CategoricVariable& b) {
   return (a.GetName() < b.GetName());
@@ -24,88 +10,76 @@ bool operator<(const EFG::CategoricVariable& a, const EFG::CategoricVariable& b)
 
 efgJS::efgJS(const Napi::CallbackInfo& info) 
   : ObjectWrap(info) {
-  ARGS_CHECK(0)
-  this->updateJsonNodes();
-
-  this->commands.emplace("/getJSON" , [this](const Napi::CallbackInfo& info) -> std::string { 
-    std::cout << "processing getJSON" << std::endl;
-    return this->dataJSON; 
-  });
-  this->commands.emplace("/getNodeType" , [this](const Napi::CallbackInfo& info) -> std::string { 
-    std::cout << "processing getNodeType" << std::endl;
-    ARGS_CHECK(2)
-    nodeType nodeT = this->GetNodeType(AS_SIZE_T(1));
-    switch (nodeT) {
-      case nodeType::tag:
-      return "t";
-    case nodeType::attribute:
-      return "a";
-    }
-    return "n"; 
-  });
-  this->commands.emplace("/import" , [this](const Napi::CallbackInfo& info) -> std::string { 
-    std::cout << "processing import" << std::endl;
-    ARGS_CHECK(2)
-    this->Import(AS_STRING(1));
-    return this->dataJSON; 
-  });
-  this->commands.emplace("/export" , [this](const Napi::CallbackInfo& info) -> std::string { 
-    std::cout << "processing export" << std::endl;
-    ARGS_CHECK(2)
-    this->Export(AS_STRING(1)); 
-    return ""; 
-  });
-  this->commands.emplace("/delete" , [this](const Napi::CallbackInfo& info) -> std::string { 
-    std::cout << "processing delete" << std::endl;
-    ARGS_CHECK(2)
-    this->Delete(AS_SIZE_T(1));
-    return this->dataJSON; 
-  });
-  this->commands.emplace("/rename" , [this](const Napi::CallbackInfo& info) -> std::string { 
-    std::cout << "processing rename" << std::endl;
-    ARGS_CHECK(3)
-    this->Rename(AS_SIZE_T(1), AS_STRING(2));
-    return this->dataJSON; 
-  });
-  this->commands.emplace("/nestTag" , [this](const Napi::CallbackInfo& info) -> std::string { 
-    std::cout << "processing nestTag" << std::endl;
-    ARGS_CHECK(3)
-    this->NestTag(AS_SIZE_T(1), AS_STRING(2));
-    return this->dataJSON; 
-  });
-  this->commands.emplace("/nestAttribute" , [this](const Napi::CallbackInfo& info) -> std::string { 
-    std::cout << "processing nestAttribute" << std::endl;
-    ARGS_CHECK(3)
-    this->NestAttribute(AS_SIZE_T(1), AS_STRING(2));
-    return this->dataJSON; 
-  });
-  this->commands.emplace("/setValue" , [this](const Napi::CallbackInfo& info) -> std::string { 
-    std::cout << "processing setValue" << std::endl;
-    ARGS_CHECK(3)
-    this->SetValue(AS_SIZE_T(1), AS_STRING(2));
-    return this->dataJSON; 
-  });
+  
+  // this->commands.emplace("/getJSON" , [this](const Napi::CallbackInfo& info) -> std::string { 
+  //   std::cout << "processing getJSON" << std::endl;
+  //   return this->dataJSON; 
+  // });
+  // this->commands.emplace("/getNodeType" , [this](const Napi::CallbackInfo& info) -> std::string { 
+  //   std::cout << "processing getNodeType" << std::endl;
+  //   ARGS_CHECK(2)
+  //   nodeType nodeT = this->GetNodeType(AS_SIZE_T(1));
+  //   switch (nodeT) {
+  //     case nodeType::tag:
+  //     return "t";
+  //   case nodeType::attribute:
+  //     return "a";
+  //   }
+  //   return "n"; 
+  // });
+  // this->commands.emplace("/import" , [this](const Napi::CallbackInfo& info) -> std::string { 
+  //   std::cout << "processing import" << std::endl;
+  //   ARGS_CHECK(2)
+  //   this->Import(AS_STRING(1));
+  //   return this->dataJSON; 
+  // });
+  // this->commands.emplace("/export" , [this](const Napi::CallbackInfo& info) -> std::string { 
+  //   std::cout << "processing export" << std::endl;
+  //   ARGS_CHECK(2)
+  //   this->Export(AS_STRING(1)); 
+  //   return ""; 
+  // });
+  // this->commands.emplace("/delete" , [this](const Napi::CallbackInfo& info) -> std::string { 
+  //   std::cout << "processing delete" << std::endl;
+  //   ARGS_CHECK(2)
+  //   this->Delete(AS_SIZE_T(1));
+  //   return this->dataJSON; 
+  // });
+  // this->commands.emplace("/rename" , [this](const Napi::CallbackInfo& info) -> std::string { 
+  //   std::cout << "processing rename" << std::endl;
+  //   ARGS_CHECK(3)
+  //   this->Rename(AS_SIZE_T(1), AS_STRING(2));
+  //   return this->dataJSON; 
+  // });
+  // this->commands.emplace("/nestTag" , [this](const Napi::CallbackInfo& info) -> std::string { 
+  //   std::cout << "processing nestTag" << std::endl;
+  //   ARGS_CHECK(3)
+  //   this->NestTag(AS_SIZE_T(1), AS_STRING(2));
+  //   return this->dataJSON; 
+  // });
+  // this->commands.emplace("/nestAttribute" , [this](const Napi::CallbackInfo& info) -> std::string { 
+  //   std::cout << "processing nestAttribute" << std::endl;
+  //   ARGS_CHECK(3)
+  //   this->NestAttribute(AS_SIZE_T(1), AS_STRING(2));
+  //   return this->dataJSON; 
+  // });
+  // this->commands.emplace("/setValue" , [this](const Napi::CallbackInfo& info) -> std::string { 
+  //   std::cout << "processing setValue" << std::endl;
+  //   ARGS_CHECK(3)
+  //   this->SetValue(AS_SIZE_T(1), AS_STRING(2));
+  //   return this->dataJSON; 
+  // });
 }
 
 Napi::Value efgJS::ProcessRequest(const Napi::CallbackInfo& info){
   Napi::Env env = info.Env(); 
-    if (info.Length() == 0) { 
-      Napi::TypeError::New(env, "Wrong number of arguments").ThrowAsJavaScriptException();
-  }
-  for(std::size_t k=0; k<info.Length(); ++k){
-    STRING_CHECK(k)
-  }
-
-  auto it = this->commands.find(AS_STRING(0));
+  Command comm(info);
+  auto it = this->commands.find(comm.getSymbol());
   if(it == this->commands.end()){
-    return Napi::String::New(env, "");
+    return Napi::String::New(env, "null");
   }
-  return Napi::String::New(env, it->second(info).c_str());
+  return Napi::String::New(env, it->second(comm).c_str());
 }
-
-
-
-
 
 bool efgJS::Import(const std::string& fileName) {
   std::unique_ptr<EFG::model::Graph> model;
