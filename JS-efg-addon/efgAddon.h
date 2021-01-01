@@ -11,9 +11,10 @@ public:
     Napi::Value ProcessRequest(const Napi::CallbackInfo&);
 
 private:
-    //const std::string& getJSON();
+    inline const std::string& getJSON() { return this->currentJSON; };
+    void updateJSON();
 
-    // the below methods return true if the json describing the graph should be updated
+    // the below methods returning a boolean, returns true if currentJSON should be updated
 
     bool Import(const std::string& fileName);
 
@@ -29,7 +30,7 @@ private:
 
     std::vector<float> GetMarginals(const std::string& name);
 
-    std::vector<std::size_t> GetMap();
+    bool RecomputeMap();
 
     bool AddFactor(const std::string& name, const std::string& fileName, const float& weight = 0.f);
 
@@ -46,6 +47,9 @@ private:
 // data
     std::unique_ptr<EFG::model::Graph> graph;
     std::map<std::string, EFG::CategoricVariable> isolatedVars;
+
+    std::map<std::string, std::size_t> lastMap;
+    std::string currentJSON;
 };
 
 

@@ -1,4 +1,5 @@
 #include "../efgAddon.h"
+#include "JSONstream.h"
 #include <iostream>
 using namespace Napi;
 
@@ -78,6 +79,84 @@ Napi::Value efgJS::ProcessRequest(const Napi::CallbackInfo& info){
   return Napi::String::New(env, it->second(comm).c_str());
 }
 
+void efgJS::updateJSON() {
+  json::arrayJSON nodes, edges;
+  auto addNode = [&nodes](const std::string& label, const std::string& id, const std::string& image) {
+    json::structJSON temp;
+    temp.addElement("label", json::String(label));
+    temp.addElement("shape", json::String("image"));
+    temp.addElement("image", json::String(image));
+    temp.addElement("color", json::String("#000000"));
+    temp.addElement("id", json::String(id));
+    nodes.addElement(temp);
+  };
+  // process variables
+  if(nullptr != this->graph) {
+    auto hiddenVars = this->graph->GetHiddenSet();
+    for(auto it = hiddenVars.begin(); it!=hiddenVars.end(); ++it) {
+      auto itMap = this->lastMap.find((*it)->GetName());
+      if(itMap == this->lastMap.end()) {
+        addNode((*it)->GetName(), (*it)->GetName(), "./image/Variable.svg");
+      }
+      else {
+        addNode((*it)->GetName() + "=" + std::to_string(itMap->second) + " (MAP)", (*it)->GetName(), "./image/Variable.svg");
+      }
+    }
+    auto obVars = this->graph->GetObservationSet();
+    for(auto it = obVars.begin(); it!=obVars.end(); ++it) {
+      addNode(it->first->GetName() + "=" + std::to_string(it->second), it->first->GetName(), "./image/Variable_Observed.svg");
+    }
+  }
+  for(auto it = this->isolatedVars.begin(); it!=this->isolatedVars.end(); ++it) {
+    addNode(it->second.GetName(), it->second.GetName(), "./image/Variable.svg");
+  }
+  // process potentials
+    std::size_t counter = 0;
+  auto addEdge = [&edges, &nodes, &counter, &addNode](const EFG::pot::IPotential& pot, const std::string& image) {
+    std::string edgeName = "__edge" + std::to_string(counter);
+    addNode("", edgeName, image);
+    auto vars = pot.GetDistribution().GetVariables();
+    if(vars.size() == 1) {
+      json::structJSON e;
+      e.addElement("from", json::String(edgeName));
+      e.addElement("to", json::String(vars.front()->GetName()));
+      edges.addElement(e);
+    }
+    else {
+      json::structJSON e1;
+      e1.addElement("from", json::String(edgeName));
+      e1.addElement("to", json::String(vars.front()->GetName()));
+      edges.addElement(e1);
+      json::structJSON e2;
+      e2.addElement("from", json::String(edgeName));
+      e2.addElement("to", json::String(vars.back()->GetName()));
+      edges.addElement(e2);
+    }
+    ++counter;
+  };
+  if(nullptr != this->graph) {
+    auto structure = this->graph->GetStructure();
+    // shapes
+    for(auto it = std::get<0>(structure).begin(); it!=std::get<0>(structure).end(); ++it) {
+      addEdge(**it , "./image/Potential_Shape.svg");
+    }
+    // tunab 
+    for(auto it = std::get<1>(structure).begin(); it!=std::get<1>(structure).end(); ++it) {
+      for(auto itt = it->begin(); itt!=it->end(); ++itt) {
+        addEdge(**itt , "./image/Potential_Exp_Shape_tunable.svg");
+      } 
+    }
+    // fixed
+    for(auto it = std::get<2>(structure).begin(); it!=std::get<2>(structure).end(); ++it) {
+      addEdge(**it , "./image/Potential_Exp_Shape_fixed.svg");
+    }
+  }
+  json::structJSON completeJSON;
+  completeJSON.addElement("nodes", nodes);
+  completeJSON.addElement("edges", edges);
+  this->currentJSON = completeJSON.str();
+}
+
 bool efgJS::Import(const std::string& fileName) {
   std::unique_ptr<EFG::model::Graph> model;
   try {
@@ -89,6 +168,7 @@ bool efgJS::Import(const std::string& fileName) {
   if(nullptr != model) {
     this->graph = std::move(model);
     this->isolatedVars.clear();
+    this->lastMap.clear();
     return true;
   }
   return false;
@@ -109,6 +189,7 @@ bool efgJS::Append(const std::string& fileName) {
   if(nullptr != model) {
     this->graph->Insert(model->GetStructure(), false);
     this->isolatedVars.clear();
+    this->lastMap.clear();
     return true;
   }
   return false;
@@ -144,12 +225,14 @@ bool efgJS::AddObservation(const std::vector<std::pair<std::string, std::size_t>
     }
   }
   this->graph->SetEvidences(ob);
+  this->lastMap.clear();
   return true;
 }
 
 bool efgJS::DeleteObservation(){
   if(nullptr == this->graph) return false;
   this->graph->SetEvidences(std::vector<std::pair<std::string, std::size_t>>{});
+  this->lastMap.clear();
   return true;
 }
 
@@ -165,16 +248,14 @@ std::vector<float> efgJS::GetMarginals(const std::string& name) {
   return marginals;
 }
 
-std::vector<std::size_t> efgJS::GetMap() {
-  if(nullptr == this->graph) return {};
-  std::vector<std::size_t> map;
-  try {
-    map = this->graph->GetMAP();
+bool efgJS::RecomputeMap() {
+  if(nullptr == this->graph) return false;
+  auto hiddenSet = this->graph->GetHiddenSet();
+  this->lastMap.clear();
+  for(auto it = hiddenSet.begin(); it!=hiddenSet.end(); ++it) {
+    this->lastMap.emplace((*it)->GetName() , this->graph->GetMAP((*it)->GetName()));
   }
-  catch(...) {
-    return  {};
-  }
-  return map;
+  return true;
 }
 
 bool efgJS::AddFactor(const std::string& name, const std::string& fileName, const float& weight) {
@@ -195,6 +276,7 @@ bool efgJS::AddFactor(const std::string& name, const std::string& fileName, cons
     finder.release();
     return false;
   }
+  this->lastMap.clear();
   return true;
 }
 
@@ -219,6 +301,7 @@ bool efgJS::AddFactor(const std::string& nameA, const std::string& nameB, const 
     finderB.release();
     return false;
   }
+  this->lastMap.clear();
   return true;
 }
 
@@ -243,6 +326,7 @@ bool efgJS::AddFactor(const std::string& nameA, const std::string& nameB, const 
     finderB.release();
     return false;
   }
+  this->lastMap.clear();
   return true;
 }
 
