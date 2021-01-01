@@ -1,6 +1,4 @@
 #include "../efgAddon.h"
-#include "VariableFinder.h"
-#include "Command.h"
 #include <iostream>
 using namespace Napi;
 
@@ -9,8 +7,7 @@ bool operator<(const EFG::CategoricVariable& a, const EFG::CategoricVariable& b)
 }
 
 efgJS::efgJS(const Napi::CallbackInfo& info) 
-  : ObjectWrap(info) {
-  
+  : ObjectWrap(info) {  
   // this->commands.emplace("/getJSON" , [this](const Napi::CallbackInfo& info) -> std::string { 
   //   std::cout << "processing getJSON" << std::endl;
   //   return this->dataJSON; 
@@ -110,7 +107,7 @@ bool efgJS::Append(const std::string& fileName) {
     model.reset();
   }
   if(nullptr != model) {
-    this->graph->Insert(model->GetStructure());
+    this->graph->Insert(model->GetStructure(), false);
     this->isolatedVars.clear();
     return true;
   }
@@ -124,7 +121,7 @@ void efgJS::Export(const std::string& fileName){
 
 bool efgJS::CreateIsolatedVar(const std::string& name, const std::size_t& size){
   VariableFinder finder(*this, name);
-  if(nullptr == finder) {
+  if(nullptr == finder.get()) {
     this->isolatedVars.emplace(name , EFG::CategoricVariable(size, name));
     return true;
   }
@@ -182,7 +179,7 @@ std::vector<std::size_t> efgJS::GetMap() {
 
 bool efgJS::AddFactor(const std::string& name, const std::string& fileName, const float& weight) {
   VariableFinder finder(*this, name);
-  if(nullptr == finder) return false;
+  if(nullptr == finder.get()) return false;
 
   try {
     EFG::pot::Factor pot({finder.get()}, fileName);
@@ -203,9 +200,9 @@ bool efgJS::AddFactor(const std::string& name, const std::string& fileName, cons
 
 bool efgJS::AddFactor(const std::string& nameA, const std::string& nameB, const std::string& fileName, const float& weight) {
   VariableFinder finderA(*this, nameA);
-  if(nullptr == finderA) return false;
+  if(nullptr == finderA.get()) return false;
   VariableFinder finderB(*this, nameB);
-  if(nullptr == finderB) return false;
+  if(nullptr == finderB.get()) return false;
 
   try {
     EFG::pot::Factor pot({finderA.get(), finderB.get()}, fileName);
@@ -227,9 +224,9 @@ bool efgJS::AddFactor(const std::string& nameA, const std::string& nameB, const 
 
 bool efgJS::AddFactor(const std::string& nameA, const std::string& nameB, const bool& corr_anti, const float& weight) {
   VariableFinder finderA(*this, nameA);
-  if(nullptr == finderA) return false;
+  if(nullptr == finderA.get()) return false;
   VariableFinder finderB(*this, nameB);
-  if(nullptr == finderB) return false;
+  if(nullptr == finderB.get()) return false;
 
   try {
     EFG::pot::Factor pot(std::vector<EFG::CategoricVariable*>{finderA.get(), finderB.get()}, corr_anti);

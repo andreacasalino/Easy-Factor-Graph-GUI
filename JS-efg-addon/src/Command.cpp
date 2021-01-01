@@ -1,4 +1,4 @@
-#include "Command.h"
+#include "../efgAddon.h"
 
 std::string efgJS::Command::getAsString(const Napi::Value& val, Napi::Env& env) {
     if(!val.IsString()) Napi::TypeError::New(env, "found input that is not a string").ThrowAsJavaScriptException();

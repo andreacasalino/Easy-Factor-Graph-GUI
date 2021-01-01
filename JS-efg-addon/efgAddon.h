@@ -42,7 +42,36 @@ private:
     std::map<char, std::function<std::string(const Command&)>> commands;
 
     class VariableFinder;
+
 // data
     std::unique_ptr<EFG::model::Graph> graph;
     std::map<std::string, EFG::CategoricVariable> isolatedVars;
+};
+
+
+class efgJS::Command {
+public:
+    Command(const Napi::CallbackInfo& args);
+
+    inline const char& getSymbol() const { return this->symbol; };
+    inline const std::multimap<char, std::string>& getOptions() const { return this->options; };
+private:
+    static std::string getAsString(const Napi::Value& val, Napi::Env& env);
+
+    char symbol;
+    std::multimap<char, std::string> options;
+};
+
+
+class efgJS::VariableFinder {
+public:
+    VariableFinder(efgJS& user, const std::string& name);
+    ~VariableFinder();
+
+    inline EFG::CategoricVariable* get() const { return this->varPtr; };
+    void release();
+private:
+    efgJS& user;
+    EFG::CategoricVariable* varPtr;
+    bool isIsolatedVar;
 };

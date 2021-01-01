@@ -1,4 +1,4 @@
-#include "VariableFinder.h"
+#include "../efgAddon.h"
 
 efgJS::VariableFinder::VariableFinder(efgJS& user, const std::string& name)
     : user(user)
@@ -25,7 +25,3 @@ void efgJS::VariableFinder::release() {
     this->isIsolatedVar = false;
     this->varPtr = nullptr;
 };
-
-bool operator==(std::nullptr_t, const efgJS::VariableFinder& f) {
-    return (nullptr == f.varPtr);
-}
