@@ -26,7 +26,13 @@ efgJS::Command::Command(const Napi::CallbackInfo& args) {
         std::string nameRaw = getAsString(option_names[k], env);
         if(nameRaw.size() != 1) Napi::TypeError::New(env, "option name too long").ThrowAsJavaScriptException();
         std::string value = getAsString(option_values[k], env);
-        this->options.emplace(nameRaw.front(), std::move(value));
+        auto it = this->options.find(nameRaw.front());
+        if(it == this->options.end()) {
+          this->options.emplace(nameRaw.front(), std::vector<std::string>{ value });
+        }
+        else {
+          it->second.push_back(value);
+        }
     }
   }
   else {

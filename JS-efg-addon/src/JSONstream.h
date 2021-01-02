@@ -51,6 +51,14 @@ namespace json {
         const T value;
     };
 
+    class Null : public streamJSON::Value {
+    public:
+        Null() = default;
+
+    private:
+        inline std::string toString() const final { return "null"; };
+    };
+
     class structJSON : public streamJSON {
     public:
         structJSON() = default;

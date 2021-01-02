@@ -2,6 +2,7 @@
 
 #include <napi.h>
 #include <model/Graph.h>
+#include "src/JSONstream.h"
 
 class efgJS : public Napi::ObjectWrap<efgJS> {
 public:
@@ -11,8 +12,7 @@ public:
     Napi::Value ProcessRequest(const Napi::CallbackInfo&);
 
 private:
-    inline const std::string& getJSON() { return this->currentJSON; };
-    void updateJSON();
+    std::shared_ptr<json::streamJSON> getJSON();
 
     // the below methods returning a boolean, returns true if currentJSON should be updated
 
@@ -28,6 +28,12 @@ private:
 
     bool DeleteObservation();
 
+    struct NodeInfo {
+        bool isIsolated;
+        std::size_t size;
+    };
+    std::unique_ptr<NodeInfo> GetNodeInfo(const std::string& name); // node can be both variable and potentials
+
     std::vector<float> GetMarginals(const std::string& name);
 
     bool RecomputeMap();
@@ -40,16 +46,19 @@ private:
 
 private:
     class Command;
-    std::map<char, std::function<std::string(const Command&)>> commands;
+    struct Request {
+        const std::map<char, std::vector<std::string>>& options;
+        std::shared_ptr<json::streamJSON> newNetwork;
+        std::shared_ptr<json::streamJSON> info;
+    };
+    std::map<char, std::function<void(Request& )>> commands;
 
     class VariableFinder;
 
 // data
     std::unique_ptr<EFG::model::Graph> graph;
     std::map<std::string, EFG::CategoricVariable> isolatedVars;
-
     std::map<std::string, std::size_t> lastMap;
-    std::string currentJSON;
 };
 
 
@@ -58,12 +67,13 @@ public:
     Command(const Napi::CallbackInfo& args);
 
     inline const char& getSymbol() const { return this->symbol; };
-    inline const std::multimap<char, std::string>& getOptions() const { return this->options; };
+    inline const std::map<char, std::vector<std::string>>& getOptions() const { return this->options; };
+    
 private:
     static std::string getAsString(const Napi::Value& val, Napi::Env& env);
 
     char symbol;
-    std::multimap<char, std::string> options;
+    std::map<char, std::vector<std::string>> options;
 };
 
 
@@ -74,6 +84,7 @@ public:
 
     inline EFG::CategoricVariable* get() const { return this->varPtr; };
     void release();
+    inline bool isIsolated() const { return this->isIsolatedVar; };
 private:
     efgJS& user;
     EFG::CategoricVariable* varPtr;

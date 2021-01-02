@@ -1,5 +1,4 @@
 #include "../efgAddon.h"
-#include "JSONstream.h"
 #include <iostream>
 using namespace Napi;
 
@@ -7,79 +6,128 @@ bool operator<(const EFG::CategoricVariable& a, const EFG::CategoricVariable& b)
   return (a.GetName() < b.GetName());
 }
 
+#define SEARCH_OPT(VAR_NAME, KEY)  \
+  auto VAR_NAME = request.options.find(KEY); \
+  if(VAR_NAME == request.options.end()) return;
+
 efgJS::efgJS(const Napi::CallbackInfo& info) 
   : ObjectWrap(info) {  
-  // this->commands.emplace("/getJSON" , [this](const Napi::CallbackInfo& info) -> std::string { 
-  //   std::cout << "processing getJSON" << std::endl;
-  //   return this->dataJSON; 
-  // });
-  // this->commands.emplace("/getNodeType" , [this](const Napi::CallbackInfo& info) -> std::string { 
-  //   std::cout << "processing getNodeType" << std::endl;
-  //   ARGS_CHECK(2)
-  //   nodeType nodeT = this->GetNodeType(AS_SIZE_T(1));
-  //   switch (nodeT) {
-  //     case nodeType::tag:
-  //     return "t";
-  //   case nodeType::attribute:
-  //     return "a";
-  //   }
-  //   return "n"; 
-  // });
-  // this->commands.emplace("/import" , [this](const Napi::CallbackInfo& info) -> std::string { 
-  //   std::cout << "processing import" << std::endl;
-  //   ARGS_CHECK(2)
-  //   this->Import(AS_STRING(1));
-  //   return this->dataJSON; 
-  // });
-  // this->commands.emplace("/export" , [this](const Napi::CallbackInfo& info) -> std::string { 
-  //   std::cout << "processing export" << std::endl;
-  //   ARGS_CHECK(2)
-  //   this->Export(AS_STRING(1)); 
-  //   return ""; 
-  // });
-  // this->commands.emplace("/delete" , [this](const Napi::CallbackInfo& info) -> std::string { 
-  //   std::cout << "processing delete" << std::endl;
-  //   ARGS_CHECK(2)
-  //   this->Delete(AS_SIZE_T(1));
-  //   return this->dataJSON; 
-  // });
-  // this->commands.emplace("/rename" , [this](const Napi::CallbackInfo& info) -> std::string { 
-  //   std::cout << "processing rename" << std::endl;
-  //   ARGS_CHECK(3)
-  //   this->Rename(AS_SIZE_T(1), AS_STRING(2));
-  //   return this->dataJSON; 
-  // });
-  // this->commands.emplace("/nestTag" , [this](const Napi::CallbackInfo& info) -> std::string { 
-  //   std::cout << "processing nestTag" << std::endl;
-  //   ARGS_CHECK(3)
-  //   this->NestTag(AS_SIZE_T(1), AS_STRING(2));
-  //   return this->dataJSON; 
-  // });
-  // this->commands.emplace("/nestAttribute" , [this](const Napi::CallbackInfo& info) -> std::string { 
-  //   std::cout << "processing nestAttribute" << std::endl;
-  //   ARGS_CHECK(3)
-  //   this->NestAttribute(AS_SIZE_T(1), AS_STRING(2));
-  //   return this->dataJSON; 
-  // });
-  // this->commands.emplace("/setValue" , [this](const Napi::CallbackInfo& info) -> std::string { 
-  //   std::cout << "processing setValue" << std::endl;
-  //   ARGS_CHECK(3)
-  //   this->SetValue(AS_SIZE_T(1), AS_STRING(2));
-  //   return this->dataJSON; 
-  // });
+
+  this->commands.emplace('X' , [this](Request& request) { 
+    SEARCH_OPT(fOpt, 'f');
+    if(this->Import(fOpt->second[0])) request.newNetwork = this->getJSON();
+  });
+
+  this->commands.emplace('A' , [this](Request& request) { 
+    SEARCH_OPT(fOpt, 'f');
+    if(this->Append(fOpt->second[0])) request.newNetwork = this->getJSON();
+  });
+
+  this->commands.emplace('V' , [this](Request& request) { 
+    SEARCH_OPT(vOpt, 'v');
+    SEARCH_OPT(sOpt, 's');
+    if(this->CreateIsolatedVar(vOpt->second[0], std::atoi(sOpt->second[0].c_str()) )) request.newNetwork = this->getJSON();
+  });
+
+  this->commands.emplace('M' , [this](Request& request) { 
+    if(this->RecomputeMap()) request.newNetwork = this->getJSON();
+  });
+
+  this->commands.emplace('O' , [this](Request& request) {
+    auto vOpt = request.options.find('v');
+    auto oOpt = request.options.find('o');
+    if((vOpt == request.options.end()) && (oOpt == request.options.end())) {
+      if(this->DeleteObservation()) request.newNetwork = this->getJSON();
+      return;
+    }
+    if(vOpt != request.options.end()) return;
+    if(oOpt != request.options.end()) return;
+    if(vOpt->second.size() != oOpt->second.size()) return;
+
+    std::vector<std::pair<std::string, std::size_t>> obs;
+    obs.reserve(vOpt->second.size());
+    for(std::size_t k=0; k<vOpt->second.size(); ++k) {
+      obs.emplace_back(std::make_pair(vOpt->second[k], std::atoi(oOpt->second[k].c_str()) ));
+    }
+    if(this->AddObservation(obs)) request.newNetwork = this->getJSON();
+  });
+
+  this->commands.emplace('R' , [this](Request& request) { 
+    SEARCH_OPT(fOpt, 'f');
+    this->Export(fOpt->second[0]);
+  });
+
+  this->commands.emplace('Q' , [this](Request& request) { 
+    SEARCH_OPT(vOpt, 'v');
+    auto info = this->GetNodeInfo(vOpt->second[0]);
+    if(nullptr == info) return;
+    std::shared_ptr<json::structJSON> infoJSON = std::make_shared<json::structJSON>();
+    infoJSON->addElement("s", json::Number<std::size_t>(info->size));
+    infoJSON->addElement("i", json::Number<bool>(info->isIsolated));
+    request.info = infoJSON;
+  });
+
+  this->commands.emplace('I' , [this](Request& request) { 
+    SEARCH_OPT(vOpt, 'v');
+    auto marg = this->GetMarginals(vOpt->second[0]);
+    std::shared_ptr<json::arrayJSON> margJSON = std::make_shared<json::arrayJSON>();
+    for(std::size_t k=0; k<marg.size(); ++k) {
+      margJSON->addElement(json::Number<float>(marg[k]));
+    }
+    request.info = margJSON;
+  });
+
+  this->commands.emplace('P' , [this](Request& request) { 
+    SEARCH_OPT(vOpt, 'v');
+    float w = 0.f;
+    auto wOpt = request.options.find('w');
+    if(wOpt != request.options.end()) {
+      w = std::atoi(wOpt->second[0].c_str());
+    }
+    auto fOpt = request.options.find('f');
+    if(fOpt != request.options.end()) {
+      if(vOpt->second.size() == 1) {
+        if(this->AddFactor(vOpt->second[0], fOpt->second[0], w)) request.newNetwork = this->getJSON();
+      }
+      else {
+        if(this->AddFactor(vOpt->second[0], vOpt->second[1], fOpt->second[0], w)) request.newNetwork = this->getJSON();
+      }
+      return;
+    }
+    auto cOpt = request.options.find('c');
+    if(cOpt != request.options.end()) {
+      if(cOpt->second[0].size() != 1) return;
+      if( ('T' == cOpt->second[0].front()) && (this->AddFactor(vOpt->second[0], vOpt->second[1], true, w)) ){
+        request.newNetwork = this->getJSON();
+      } 
+      if( ('F' == cOpt->second[0].front()) && (this->AddFactor(vOpt->second[0], vOpt->second[1], true, w)) ){
+        request.newNetwork = this->getJSON();
+      } 
+      return;
+    }
+  });
+
 }
 
 Napi::Value efgJS::ProcessRequest(const Napi::CallbackInfo& info){
   Napi::Env env = info.Env(); 
   Command comm(info);
+  std::shared_ptr<json::streamJSON> respNewNet = nullptr;
+  std::shared_ptr<json::streamJSON> respInfo = nullptr;
   auto it = this->commands.find(comm.getSymbol());
-  if(it == this->commands.end()){
-    return Napi::String::New(env, "null");
+  if(it != this->commands.end()){
+    Request req = {comm.getOptions() , respNewNet, respInfo};
+    it->second(req);
   }
-  return Napi::String::New(env, it->second(comm).c_str());
+  json::structJSON response;
+  if(nullptr == respNewNet) response.addElement("n", json::Null());
+  else                      response.addElement("n", *respNewNet.get());
+  if(nullptr == respInfo)   response.addElement("i", json::Null());
+  else                      response.addElement("i", *respInfo.get());
+  return Napi::String::New(env, response.str());
 }
 
-void efgJS::updateJSON() {
+std::shared_ptr<json::streamJSON> efgJS::getJSON() {
   json::arrayJSON nodes, edges;
   auto addNode = [&nodes](const std::string& label, const std::string& id, const std::string& image) {
     json::structJSON temp;
@@ -151,10 +199,10 @@ void efgJS::updateJSON() {
       addEdge(**it , "./image/Potential_Exp_Shape_fixed.svg");
     }
   }
-  json::structJSON completeJSON;
-  completeJSON.addElement("nodes", nodes);
-  completeJSON.addElement("edges", edges);
-  this->currentJSON = completeJSON.str();
+  std::shared_ptr<json::structJSON> completeJSON = std::make_shared<json::structJSON>();
+  completeJSON->addElement("nodes", nodes);
+  completeJSON->addElement("edges", edges);
+  return completeJSON;
 }
 
 bool efgJS::Import(const std::string& fileName) {
@@ -234,6 +282,16 @@ bool efgJS::DeleteObservation(){
   this->graph->SetEvidences(std::vector<std::pair<std::string, std::size_t>>{});
   this->lastMap.clear();
   return true;
+}
+
+std::unique_ptr<efgJS::NodeInfo> efgJS::GetNodeInfo(const std::string& name) {
+  VariableFinder finder(*this, name);
+  if(nullptr == finder.get()) return nullptr;
+  std::unique_ptr<NodeInfo> info = std::make_unique<NodeInfo>();
+  info->isIsolated = finder.isIsolated();
+  info->size = finder.get()->size();
+  finder.release();
+  return info;
 }
 
 std::vector<float> efgJS::GetMarginals(const std::string& name) {

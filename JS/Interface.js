@@ -6,10 +6,9 @@ function cin(question, suggestion){
 
 class Interface{
     constructor(){
-        this.__init_connection();
-
-        this.__att_clicked = -1;
-        this.__prev_clicked = -1;
+        this.__structure = null;
+        this.__att_clicked = null;
+        this.__prev_clicked = null;
 
         this.__content =  document.createElement("div");
         document.body.appendChild(this.__content);
@@ -21,7 +20,7 @@ class Interface{
 
         this.__network = C.at(1);
         
-        this.__update(-1);
+        this.__update(null);
 
         let this_ref = this;
         this.__buttons = [];
@@ -48,114 +47,81 @@ class Interface{
         this.__buttons[0].addEventListener("click", function(){ 
             let val = cin("Set the value for the observation", "0");
             if(val == null) return;
-            this_ref.send_command("O",["v","n"],[this_ref.__names_sizes[this_ref.__att_clicked].N,val]); 
+            this_ref.send_command("O",["v", "o"],[this_ref.__att_clicked,val]); 
         });
         this.__buttons[1].addEventListener("click", function(){ 
-            this_ref.send_command("I",["v"],[this_ref.__names_sizes[this_ref.__att_clicked].N]); 
+            this_ref.send_command("I",["v"],[this_ref.__att_clicked], (marg)=>{this_ref.__plot_marginal(marg)}); 
         });
         this.__buttons[2].addEventListener("click", function(){ 
             let w = cin("Set the weight (0 for simple shape)", "0");
             if(w == null) return;
-            if(w == 0) this_ref.send_download("P",["v", "s"], [this_ref.__names_sizes[this_ref.__att_clicked], "%download"]); 
-            else  this_ref.send_download("P",["v", "s", "w"], [this_ref.__names_sizes[this_ref.__att_clicked], "%download", w]); 
+            let file = cin("source location", "./file");
+            if(file == null) return;
+            if(w == 0) this_ref.send_command("P",["v", "f"], [this_ref.__att_clicked, file]); 
+            else  this_ref.send_command("P",["v", "f", "w"], [this_ref.__att_clicked, file, new String(w)]); 
         });
 
         binary_menu_C_S[0].addEventListener("click", function(){ 
             let w = cin("Set the weight (0 for simple shape)", "0");
             if(w == null) return;
-            if(w == 0) this_ref.send_command("P",["v", "v", "c"], 
-            [this_ref.__names_sizes[this_ref.__att_clicked].N, this_ref.__names_sizes[this_ref.__prev_clicked].N, "T"]); 
-            else this_ref.send_command("P",["v", "v", "c", "w"], 
-            [this_ref.__names_sizes[this_ref.__att_clicked].N, this_ref.__names_sizes[this_ref.__prev_clicked].N, "T", w]); 
+            if(w == 0) this_ref.send_command("P",["v", "v", "c"], [this_ref.__att_clicked, this_ref.__prev_clicked, "T"]); 
+            else this_ref.send_command("P",["v", "v", "c", "w"], [this_ref.__att_clicked, this_ref.__prev_clicked, "T", new String(w)]); 
         });
         binary_menu_C_S[1].addEventListener("click", function(){ 
             let w = cin("Set the weight (0 for simple shape)", "0");
             if(w == null) return;
-            if(w == 0) this_ref.send_command("P",["v", "v", "c"], 
-            [this_ref.__names_sizes[this_ref.__att_clicked].N, this_ref.__names_sizes[this_ref.__prev_clicked].N, "F"]); 
-            else this_ref.send_command("P",["v", "v", "c", "w"], 
-            [this_ref.__names_sizes[this_ref.__att_clicked].N, this_ref.__names_sizes[this_ref.__prev_clicked].N, "F", w]); 
+            if(w == 0) this_ref.send_command("P",["v", "v", "c"], [this_ref.__att_clicked, this_ref.__prev_clicked, "F"]); 
+            else this_ref.send_command("P",["v", "v", "c", "w"], [this_ref.__att_clicked, this_ref.__prev_clicked, "F", new String(w)]); 
         });
         binary_menu_C_S[2].addEventListener("click", function(){ 
             let w = cin("Set the weight (0 for simple shape)", "0");
             if(w == null) return;
-            if(w == 0) this_ref.send_download("P",["v", "v", "s"], 
-            [this_ref.__names_sizes[this_ref.__att_clicked].N, this_ref.__names_sizes[this_ref.__prev_clicked].N, "%download"]); 
-            else this_ref.send_download("P",["v", "v", "s", "w"], 
-            [this_ref.__names_sizes[this_ref.__att_clicked].N, this_ref.__names_sizes[this_ref.__prev_clicked].N, "%download", w]); 
+            let file = cin("source location", "./file");
+            if(file == null) return;
+            if(w == 0) this_ref.send_command("P",["v", "v", "f"], [this_ref.__att_clicked, this_ref.__prev_clicked, file]); 
+            else  this_ref.send_command("P",["v", "v", "f", "w"], [this_ref.__att_clicked, this_ref.__prev_clicked, file, new String(w)]); 
         });
-
-
-        this.__Catcher =  new file_catcher();
     }
 
-    __init_connection(){
-        this.__server_key = '-';
-		let handshake_req = new XMLHttpRequest();
-		handshake_req.open('GET', 'http://localhost:8001', false);
-		handshake_req.setRequestHeader('Accept', this.__server_key + '_hello');
-		handshake_req.send();
-		this.__server_key = handshake_req.response;
-        console.log("server key: " + this.__server_key);
-        
-        this.__structure = null;
-        this.__names_sizes = [];
-        this.__marginals = [];
-    }
-
-    send_command(command_symbol, field_names = [], field_values = []){
-		var upd_req = new XMLHttpRequest();
-		let this_ref = this;
-		upd_req.onload = function() { 
-			let x =  upd_req.response;
-				if(x == 'null'){
-					return;
-				}
-				else {
-					this_ref.__update_network(x);
-				}
-		}
-		
-        upd_req.open('GET', 'http://localhost:8001', true);
-        let v = this.__server_key + '_' + command_symbol;
-        for(let i = 0; i<field_names.length; i++){
-            v += "$" + field_names[i];
-            v += "$" + field_values[i];
-        }
-        console.log(v);
-		upd_req.setRequestHeader('Accept', v);
-		upd_req.send();
-    }
-    
-    send_download(command_symbol, field_names, field_values){
-
+    send_command(command_symbol, field_names = [], field_values = [], responseCllbck = null){
+        const xhr = new XMLHttpRequest();
         let this_ref = this;
-        let dwld = function(){
-            this_ref.send_command(command_symbol, field_names, field_values);
-        };
-        this.__Catcher.download_file("__temp_download__.txt", dwld);
-
+        xhr.addEventListener('load', ()=>{
+            try {
+                const respJSON = JSON.parse(xhr.response);
+                if(null !== respJSON['n']) this_ref.__update_network(respJSON['n']);
+                if(null !== responseCllbck) responseCllbck(respJSON['i']);
+            } catch (error) {
+                console.log('invalid reponse: ', error);
+            }
+        });
+		xhr.addEventListener('error', ()=>{ console.log("error"); });
+        xhr.open('POST', 'command');
+        let comandBody;
+        comandBody['s'] = command_symbol;
+        comandBody['n'] = field_names;
+        comandBody['v'] = field_values;
+        xhr.send(JSON.stringify(comandBody));
     }
 
-    __update(id){ //pass -1 when de-selected
-        if(id == -1){
+    __update(selectedNode){ //pass null when de-selected
+        if(null === selectedNode){
             this.__prev_clicked = this.__att_clicked;
+            // this.__att_clicked = null;
 
             this.__network.style.width = "100%";
             this.__content.innerHTML = "";
             this.__content.appendChild(this.__network);
-
         }
         else{
-            this.__att_clicked = id;
-            if(this.__prev_clicked == id) this.__prev_clicked = -1;
+            this.__att_clicked = selectedNode['name'];
+            if(this.__prev_clicked == selectedNode['name']) this.__prev_clicked = null;
             
             this.__content.innerHTML = "";
             this.__network.style.width =  100*(1-1 / columns) + "%";
             this.__content.innerHTML = "";
             this.__content.appendChild(this.__left_menu);
             this.__content.appendChild(this.__network);
-
 
             this.__left_menu.innerHTML = "";
 
@@ -168,33 +134,33 @@ class Interface{
                 txt.innerHTML = testo;
                 info.appendChild(txt);
                 this_ref.__left_menu.appendChild(info);
-
             };
-            add_info("Name: " + this.__names_sizes[id].N);
-            add_info("Size: " + this.__names_sizes[id].S);
+            add_info("Name: " + selectedNode['name']);
+            add_info("Size: " + selectedNode['size']);
 
-            //O P_unary
-            if(id < this.__marginals.length) {
+            // P_unary
+            if(selectedNode['isIso'] === 0) {
                 this.__left_menu.appendChild(this.__buttons[0]);
                 this.__left_menu.appendChild(this.__buttons[2]);
             }
             // P_binary
-            if(this.__prev_clicked != -1) {
-                if(this.__names_sizes[this.__att_clicked].S ==  this.__names_sizes[this.__prev_clicked].S) this.__vertical_P.select_menu(0);
-                else this.__vertical_P.select_menu(1);
+            if(this.__prev_clicked !== null) {
+                // if(this.__names_sizes[this.__att_clicked].S ==  this.__names_sizes[this.__prev_clicked].S) this.__vertical_P.select_menu(0);
+                // else 
+                this.__vertical_P.select_menu(1);
                 this.__left_menu.appendChild(this.__buttons[3]);
             }
             //I
-            if(id < this.__marginals.length) {
-                if(this.__marginals[id].length == 0) this.__left_menu.appendChild(this.__buttons[1]);
-                else this.__plot_marginal(this.__marginals[id]);
+            if(selectedNode['isIso'] === 0) {
+                // if(this.__marginals[id].length == 0) 
+                this.__left_menu.appendChild(this.__buttons[1]);
+                // else this.__plot_marginal(this.__marginals[id]);
             }
             
         }
     }
 
-    __update_network(new_net){
-
+    __update_network(netJSON){
 		if (this.__structure !== null) {
 			this.__structure.destroy();
 			this.__structure = null;
@@ -206,29 +172,21 @@ class Interface{
 			interaction:{hover:true, selectable: true}	
         };
         
-        let temp_JSON = JSON.parse(new_net);
-
-        let temp_net_JSON = {nodes : 0, edges:0};
-        temp_net_JSON.nodes = temp_JSON.nodes;
-        temp_net_JSON.edges = temp_JSON.edges;
-
-        this.__structure = new vis.Network(this.__network, temp_net_JSON, options);
-
-        this.__marginals = temp_JSON.marginals;
-        this.__names_sizes = temp_JSON.names;
+        this.__structure = new vis.Network(this.__network, netJSON, options);
 		
 		let this_ref = this;
 		this.__structure.on("click", function (params) {
             params.event = "[original event]";
-            let id_node = parseInt(params.nodes[0]);
-            if(id_node < this_ref.__names_sizes.length  ) this_ref.__update(id_node);
-            else this_ref.__update(-1);
+            const selectedNode = params.nodes[0];
+            this_ref.send_command('Q', ['v'],[selectedNode], (resp)=>{ 
+                if(null !== resp) this_ref.__update( {name:selectedNode, size:resp['s'], isIso:resp['i']});
+                else              this_ref.__update(null);
+            });
 		});
 		
 		this.__structure.on("deselectNode", function (params) {
-			this_ref.__update(-1);
-        });
-        	            
+			this_ref.__update(null);
+        });        	            
     }     	
     
     __plot_marginal(vals){

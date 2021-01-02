@@ -30,7 +30,6 @@
         <script src="./JS/panel.js"></script>
         <script src="./JS/popup_menu.js"></script>
         <script src="./JS/Interface.js"></script>
-        <script src="./JS/file_browsering.js"></script>
         <script src="./JS/chart.js"></script>
 
         <script>
@@ -64,16 +63,24 @@
             popup_hndlr.add_driver(panel_top.childNodes[3] , panel_query);
 
             panel_top.childNodes[1].addEventListener("click", function(){ 
-                let target_file = cin("Enter file name", "file.txt");
+                let target_file = cin("Enter file name", "exported_graph.xml");
                 if(target_file == null) return;
                 Intrfc.send_command("R",["f"],[target_file]); 
             });
-            panel_top.childNodes[2].addEventListener("click", function(){ Intrfc.send_download("B", ["f"], ["%download"]); });
+            // panel_top.childNodes[2].addEventListener("click", function(){ Intrfc.send_download("B", ["f"], ["%download"]); });
             
-            panel_modify.childNodes[0].addEventListener("click", function(){  Intrfc.send_download("X", ["f"], ["%download"]); });
-            panel_modify.childNodes[1].addEventListener("click", function(){  Intrfc.send_download("A", ["f"], ["%download"]); });
+            panel_modify.childNodes[0].addEventListener("click", function(){ 
+                let target_file = cin("Enter file name", "./JS-efg-addon/EFG/Samples/Sample_03_Belief_propagation_B/Sample_03_graphs/graph_3.xml");
+                if(target_file == null) return;
+                Intrfc.send_command("X",["f"],[target_file]); 
+            });
+            panel_modify.childNodes[1].addEventListener("click", function(){ 
+                let target_file = cin("Enter file name", "./JS-efg-addon/EFG/Samples/Sample_03_Belief_propagation_B/Sample_03_graphs/graph_2.xml");
+                if(target_file == null) return;
+                Intrfc.send_command("A",["f"],[target_file]); 
+            });
             panel_modify.childNodes[2].addEventListener("click", function(){ 
-                let name = cin("Enter var name", "var_A");
+                let name = cin("Enter var name", "varA");
                 if(name == null) return;
                 let size = cin("Enter var size", "2");
                 if(size == null) return;
@@ -82,22 +89,6 @@
 
             panel_query.childNodes[0].addEventListener("click", function(){ Intrfc.send_command("M"); });
             panel_query.childNodes[1].addEventListener("click", function(){ Intrfc.send_command("O"); });
-
-
-            window.addEventListener("beforeunload", function(e) { 
-                Intrfc.send_command("T"); 
-
-                function wait(ms){
-                    let start = new Date().getTime();
-                    let end = start;
-                    while(end < start + ms) {
-                        end = new Date().getTime();
-                    }
-                }
-                wait(1300);
-
-            }, false);
-
         </script>
     </body>
 </html>

@@ -1,15 +1,15 @@
-var addon = require('./JS-xml-addon/build/Release/xml-addon.node');
+var addon = require('./JS-efg-addon/build/Release/efg-addon.node');
 
 const http = require('http')
 const fs = require('fs')
 
-let XMLparser = new addon.xmlJS();
+let efgModel = new addon.efgJS();
 
 const server = http.createServer((req, res) => {
     console.log("request url: " + req.url);
     if(req.url.localeCompare('/') === 0){
         res.writeHead(200, { 'content-type': 'text/html' });
-        fs.createReadStream('XML-GUI.html').pipe(res);
+        fs.createReadStream('EFG-GUI.html').pipe(res);
         console.log("");
         return;
     }
@@ -60,28 +60,21 @@ const server = http.createServer((req, res) => {
     process((request)=>{
         console.log("respond to GET request");
         console.log(request);
-        vals = JSON.parse(request);
-        console.log("req bodies:");
-        console.log(vals);
-
-        function logAndReturn(result){
-            console.log("result: " + result);
+        comandJSON = JSON.parse(request);
+        try {
+            const commSymbol = comandJSON['s'];
+            const commNames = comandJSON['n'];
+            const commValues = comandJSON['v'];
+            if(commNames.length != commValues.length){
+                throw 'invalid command';
+            }
+            const response = efgModel.ProcessRequest(commSymbol, commNames, commValues);
+            console.log("result: " + response);
             console.log("");
-            return result;
-        }
-
-        if(vals.length == 0){
-            return logAndReturn(XMLparser.ProcessRequest(req.url));
-        }
-        else if(vals.length == 1){
-            return logAndReturn(XMLparser.ProcessRequest(req.url, vals[0] ));
-        }
-        else if(vals.length == 2){
-            return logAndReturn(XMLparser.ProcessRequest(req.url, vals[0], vals[1] ));
-        }
-        else {
-            console.log("too many arguments in request: ");
-            console.log("");
+            return response;
+        } catch (error) {
+            console.log('unsuccess:');
+            console.log(error);
             return null;
         }
     });
