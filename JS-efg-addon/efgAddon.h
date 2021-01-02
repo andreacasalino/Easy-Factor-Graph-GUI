@@ -69,6 +69,8 @@ public:
     inline const char& getSymbol() const { return this->symbol; };
     inline const std::map<char, std::vector<std::string>>& getOptions() const { return this->options; };
     
+    std::string str() const;
+    
 private:
     static std::string getAsString(const Napi::Value& val, Napi::Env& env);
 

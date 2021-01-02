@@ -39,3 +39,18 @@ efgJS::Command::Command(const Napi::CallbackInfo& args) {
     Napi::TypeError::New(env, "wrong number of inputs for a command").ThrowAsJavaScriptException(); 
   }
 }
+
+std::string efgJS::Command::str() const {
+  json::structJSON commandJSON;
+  commandJSON.addElement("s", json::Number<char>(this->symbol));
+  json::structJSON optionJSON;
+  for(auto it = this->options.begin(); it!=this->options.end(); ++it) {
+    json::arrayJSON vals;
+    for(std::size_t k=0; k<it->second.size(); ++k) {
+      vals.addElement(json::String(it->second[k]));
+    }
+    optionJSON.addElement(std::to_string(it->first), vals);
+  }
+  commandJSON.addElement("opt", optionJSON);
+  return commandJSON.str();
+}

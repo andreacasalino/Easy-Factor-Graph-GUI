@@ -112,19 +112,25 @@ efgJS::efgJS(const Napi::CallbackInfo& info)
 Napi::Value efgJS::ProcessRequest(const Napi::CallbackInfo& info){
   Napi::Env env = info.Env(); 
   Command comm(info);
+  std::cout << "-------- Request --------" << std::endl << comm.str() << std::endl;
+
   std::shared_ptr<json::streamJSON> respNewNet = nullptr;
   std::shared_ptr<json::streamJSON> respInfo = nullptr;
-  auto it = this->commands.find(comm.getSymbol());
-  if(it != this->commands.end()){
-    Request req = {comm.getOptions() , respNewNet, respInfo};
-    it->second(req);
-  }
+  // auto it = this->commands.find(comm.getSymbol());
+  // if(it != this->commands.end()){
+  //   Request req = {comm.getOptions() , respNewNet, respInfo};
+  //   it->second(req);
+  // }
+  
   json::structJSON response;
   if(nullptr == respNewNet) response.addElement("n", json::Null());
   else                      response.addElement("n", *respNewNet.get());
   if(nullptr == respInfo)   response.addElement("i", json::Null());
   else                      response.addElement("i", *respInfo.get());
-  return Napi::String::New(env, response.str());
+
+  std::string respStr = response.str();
+  std::cout << "-------- Response --------" << std::endl << respStr << std::endl << std::endl;
+  return Napi::String::New(env, respStr);
 }
 
 std::shared_ptr<json::streamJSON> efgJS::getJSON() {
