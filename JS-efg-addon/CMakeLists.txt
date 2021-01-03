@@ -7,6 +7,7 @@ project (efg-addon)
 if(NOT WIN32)
 set(LIB_OPT ON) #linux uses shared libraries, while windows uses static ones
 endif()
+set(THREAD_POOL_OPT OFF)
 # set macro-directory and find scripts
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/EFG/cmake/")
 # include cmake custom functions

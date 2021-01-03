@@ -13,6 +13,8 @@ bool operator<(const EFG::CategoricVariable& a, const EFG::CategoricVariable& b)
 efgJS::efgJS(const Napi::CallbackInfo& info) 
   : ObjectWrap(info) {  
 
+    EFG::CategoricVariable var( 3, "A"); 
+
   this->commands.emplace('X' , [this](Request& request) { 
     SEARCH_OPT(fOpt, 'f');
     if(this->Import(fOpt->second[0])) request.newNetwork = this->getJSON();
@@ -116,11 +118,11 @@ Napi::Value efgJS::ProcessRequest(const Napi::CallbackInfo& info){
 
   std::shared_ptr<json::streamJSON> respNewNet = nullptr;
   std::shared_ptr<json::streamJSON> respInfo = nullptr;
-  // auto it = this->commands.find(comm.getSymbol());
-  // if(it != this->commands.end()){
-  //   Request req = {comm.getOptions() , respNewNet, respInfo};
-  //   it->second(req);
-  // }
+  auto it = this->commands.find(comm.getSymbol());
+  if(it != this->commands.end()){
+    Request req = {comm.getOptions() , respNewNet, respInfo};
+    it->second(req);
+  }
   
   json::structJSON response;
   if(nullptr == respNewNet) response.addElement("n", json::Null());
