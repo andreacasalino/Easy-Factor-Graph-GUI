@@ -1,6 +1,6 @@
-#include "../efgAddon.h"
+#include <EFG-model.h>
 
-efgJS::VariableFinder::VariableFinder(efgJS& user, const std::string& name)
+EFG_model::VariableFinder::VariableFinder(EFG_model& user, const std::string& name)
     : user(user)
     , varPtr(nullptr)
     , isIsolatedVar(false) {
@@ -14,14 +14,14 @@ efgJS::VariableFinder::VariableFinder(efgJS& user, const std::string& name)
     }
 }
 
-efgJS::VariableFinder::~VariableFinder() {
+EFG_model::VariableFinder::~VariableFinder() {
     if(this->isIsolatedVar) {
         auto it = this->user.isolatedVars.find(this->varPtr->GetName());
         this->user.isolatedVars.erase(it);
     }
 }
 
-void efgJS::VariableFinder::release() {
+void EFG_model::VariableFinder::release() {
     this->isIsolatedVar = false;
     this->varPtr = nullptr;
 };

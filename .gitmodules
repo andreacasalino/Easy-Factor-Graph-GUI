@@ -1,3 +1,6 @@
-[submodule "JS-efg-addon/EFG"]
-	path = JS-efg-addon/EFG
-	url = https://github.com/andreacasalino/Easy-Factor-Graph
+[submodule "src/Http-GUI"]
+	path = src/Http-GUI
+	url = https://github.com/andreacasalino/Http-GUI
+[submodule "src/EFG"]
+	path = src/EFG
+	url = https://github.com/andreacasalino/Easy-Factor-Graph.git

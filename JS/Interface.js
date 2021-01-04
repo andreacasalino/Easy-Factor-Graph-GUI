@@ -96,12 +96,12 @@ class Interface{
             }
         });
 		xhr.addEventListener('error', ()=>{ console.log("error"); });
-        xhr.open('POST', 'command');
-        let comandBody;
-        comandBody['s'] = command_symbol;
-        comandBody['n'] = field_names;
-        comandBody['v'] = field_values;
-        xhr.send(JSON.stringify(comandBody));
+        xhr.open('POST', 'http://localhost:3000/' + command_symbol);
+        let comandBody = '';
+		for(let k=0; k<field_names.length; ++k) {
+			comandBody += ' ' + field_names[k] +  ' ' + field_values[k];
+		}
+		xhr.send( comandBody );
     }
 
     __update(selectedNode){ //pass null when de-selected
