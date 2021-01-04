@@ -5,7 +5,7 @@ The application is made of 2 big components:
 * **Frontend**, an **html** script represented by **EFG-GUI.html**
 * **Backend**, a **C++** application that can be compiled using [Cmake](https://cmake.org) which wraps [Easy-Factor-Graph](https://github.com/andreacasalino/Easy-Factor-Graph), a library I wrote for handling undirected graphical models.
 
-**Install**:
+**Compile**:
 
 * initialize the git submodule with the 2 commands (from root) 
   * `git submodule update --init --recursive`
