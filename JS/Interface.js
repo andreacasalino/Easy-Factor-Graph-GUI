@@ -47,43 +47,49 @@ class Interface{
         this.__buttons[0].addEventListener("click", function(){ 
             let val = cin("Set the value for the observation", "0");
             if(val == null) return;
-            this_ref.send_command("O",["v", "o"],[this_ref.__att_clicked,val]); 
+            this_ref.send_command("O",["v", "o"],[this_ref.__att_clicked['name'],val]); 
         });
         this.__buttons[1].addEventListener("click", function(){ 
-            this_ref.send_command("I",["v"],[this_ref.__att_clicked], (marg)=>{this_ref.__plot_marginal(marg)}); 
+            this_ref.send_command("I",["v"],[this_ref.__att_clicked['name']], (marg)=>{this_ref.__plot_marginal(marg)}); 
         });
         this.__buttons[2].addEventListener("click", function(){ 
             let w = cin("Set the weight (0 for simple shape)", "0");
             if(w == null) return;
             let file = cin("source location", "./file");
             if(file == null) return;
-            if(w == 0) this_ref.send_command("P",["v", "f"], [this_ref.__att_clicked, file]); 
-            else  this_ref.send_command("P",["v", "f", "w"], [this_ref.__att_clicked, file, new String(w)]); 
+            if(w == 0) this_ref.send_command("P",["v", "f"], [this_ref.__att_clicked['name'], file]); 
+            else  this_ref.send_command("P",["v", "f", "w"], [this_ref.__att_clicked['name'], file, new String(w)]); 
         });
 
         binary_menu_C_S[0].addEventListener("click", function(){ 
             let w = cin("Set the weight (0 for simple shape)", "0");
             if(w == null) return;
-            if(w == 0) this_ref.send_command("P",["v", "v", "c"], [this_ref.__att_clicked, this_ref.__prev_clicked, "T"]); 
-            else this_ref.send_command("P",["v", "v", "c", "w"], [this_ref.__att_clicked, this_ref.__prev_clicked, "T", new String(w)]); 
+            if(w == 0) this_ref.send_command("P",["v", "v", "c"], [this_ref.__att_clicked['name'], this_ref.__prev_clicked['name'], "T"]); 
+            else this_ref.send_command("P",["v", "v", "c", "w"], [this_ref.__att_clicked['name'], this_ref.__prev_clicked['name'], "T", new String(w)]); 
         });
         binary_menu_C_S[1].addEventListener("click", function(){ 
             let w = cin("Set the weight (0 for simple shape)", "0");
             if(w == null) return;
-            if(w == 0) this_ref.send_command("P",["v", "v", "c"], [this_ref.__att_clicked, this_ref.__prev_clicked, "F"]); 
-            else this_ref.send_command("P",["v", "v", "c", "w"], [this_ref.__att_clicked, this_ref.__prev_clicked, "F", new String(w)]); 
+            if(w == 0) this_ref.send_command("P",["v", "v", "c"], [this_ref.__att_clicked['name'], this_ref.__prev_clicked['name'], "F"]); 
+            else this_ref.send_command("P",["v", "v", "c", "w"], [this_ref.__att_clicked['name'], this_ref.__prev_clicked['name'], "F", new String(w)]); 
         });
         binary_menu_C_S[2].addEventListener("click", function(){ 
             let w = cin("Set the weight (0 for simple shape)", "0");
             if(w == null) return;
             let file = cin("source location", "./file");
             if(file == null) return;
-            if(w == 0) this_ref.send_command("P",["v", "v", "f"], [this_ref.__att_clicked, this_ref.__prev_clicked, file]); 
-            else  this_ref.send_command("P",["v", "v", "f", "w"], [this_ref.__att_clicked, this_ref.__prev_clicked, file, new String(w)]); 
+            if(w == 0) this_ref.send_command("P",["v", "v", "f"], [this_ref.__att_clicked['name'], this_ref.__prev_clicked['name'], file]); 
+            else  this_ref.send_command("P",["v", "v", "f", "w"], [this_ref.__att_clicked['name'], this_ref.__prev_clicked['name'], file, new String(w)]); 
         });
     }
 
     send_command(command_symbol, field_names = [], field_values = [], responseCllbck = null){
+        if(field_names.length != field_values.length) {
+            console.log("invalid command");
+            console.log({names:field_names, values:field_values});
+            console.log("");
+            return;
+        }
         const xhr = new XMLHttpRequest();
         let this_ref = this;
         xhr.addEventListener('load', ()=>{
@@ -96,26 +102,27 @@ class Interface{
             }
         });
 		xhr.addEventListener('error', ()=>{ console.log("error"); });
-        xhr.open('POST', 'command');
-        let comandBody;
-        comandBody['s'] = command_symbol;
-        comandBody['n'] = field_names;
-        comandBody['v'] = field_values;
-        xhr.send(JSON.stringify(comandBody));
+        xhr.open('POST', 'http://localhost:3000/' + command_symbol);
+        let comandBody = '';
+		for(let k=0; k<field_names.length; ++k) {
+			comandBody += ' ' + field_names[k] +  ' ' + field_values[k];
+		}
+		xhr.send( comandBody );
     }
 
     __update(selectedNode){ //pass null when de-selected
         if(null === selectedNode){
             this.__prev_clicked = this.__att_clicked;
-            // this.__att_clicked = null;
 
             this.__network.style.width = "100%";
             this.__content.innerHTML = "";
             this.__content.appendChild(this.__network);
         }
         else{
-            this.__att_clicked = selectedNode['name'];
-            if(this.__prev_clicked == selectedNode['name']) this.__prev_clicked = null;
+            this.__att_clicked = selectedNode;
+            if(this.__prev_clicked !== null) {
+                if(this.__prev_clicked['name'] == selectedNode['name']) this.__prev_clicked = null;
+            }
             
             this.__content.innerHTML = "";
             this.__network.style.width =  100*(1-1 / columns) + "%";
@@ -145,16 +152,13 @@ class Interface{
             }
             // P_binary
             if(this.__prev_clicked !== null) {
-                // if(this.__names_sizes[this.__att_clicked].S ==  this.__names_sizes[this.__prev_clicked].S) this.__vertical_P.select_menu(0);
-                // else 
-                this.__vertical_P.select_menu(1);
+                if(this.__att_clicked['size'] ==  this.__prev_clicked['size']) this.__vertical_P.select_menu(0);
+                else this.__vertical_P.select_menu(1);
                 this.__left_menu.appendChild(this.__buttons[3]);
             }
             //I
             if(selectedNode['isIso'] === 0) {
-                // if(this.__marginals[id].length == 0) 
                 this.__left_menu.appendChild(this.__buttons[1]);
-                // else this.__plot_marginal(this.__marginals[id]);
             }
             
         }
