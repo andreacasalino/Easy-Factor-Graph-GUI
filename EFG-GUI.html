@@ -70,12 +70,12 @@
             // panel_top.childNodes[2].addEventListener("click", function(){ Intrfc.send_download("B", ["f"], ["%download"]); });
             
             panel_modify.childNodes[0].addEventListener("click", function(){ 
-                let target_file = cin("Enter file name", "./JS-efg-addon/EFG/Samples/Sample_03_Belief_propagation_B/Sample_03_graphs/graph_3.xml");
+                let target_file = cin("Enter file name", "../src/EFG/Samples/Sample_03_Belief_propagation_B/Sample_03_graphs/graph_3.xml");
                 if(target_file == null) return;
                 Intrfc.send_command("X",["f"],[target_file]); 
             });
             panel_modify.childNodes[1].addEventListener("click", function(){ 
-                let target_file = cin("Enter file name", "./JS-efg-addon/EFG/Samples/Sample_03_Belief_propagation_B/Sample_03_graphs/graph_2.xml");
+                let target_file = cin("Enter file name", "../src/EFG/Samples/Sample_03_Belief_propagation_B/Sample_03_graphs/graph_2.xml");
                 if(target_file == null) return;
                 Intrfc.send_command("A",["f"],[target_file]); 
             });

@@ -12,6 +12,7 @@ std::string getRequestName(const std::string& incompleteName) {
 
 #define REACTION(SYMBOL, METHOD) \
   svr.Post(getRequestName(SYMBOL).c_str() , [&model, &nullResp](const Request& req, Response& res) { \
+    std::cout << "request ID: " << SYMBOL << std::endl; \
     std::cout << "request:" << std::endl << req.body << std::endl; \
     res.set_header("Access-Control-Allow-Origin", "*"); \
     gui::RequestPtr opt = gui::RequestOptions::parse(req.body); \

@@ -272,6 +272,7 @@ std::string EFG_model::AddFactor(const gui::RequestOptions& opt) {
 }
 
 bool EFG_model::AddFactor(const std::string& name, const std::string& fileName, const float& weight) {
+  if(nullptr == this->graph) this->graph = std::make_unique<EFG::model::Graph>();
   VariableFinder finder(*this, name);
   if(nullptr == finder.get()) return false;
 
@@ -294,6 +295,7 @@ bool EFG_model::AddFactor(const std::string& name, const std::string& fileName, 
 }
 
 bool EFG_model::AddFactor(const std::string& nameA, const std::string& nameB, const std::string& fileName, const float& weight) {
+  if(nullptr == this->graph) this->graph = std::make_unique<EFG::model::Graph>();
   VariableFinder finderA(*this, nameA);
   if(nullptr == finderA.get()) return false;
   VariableFinder finderB(*this, nameB);
@@ -319,6 +321,7 @@ bool EFG_model::AddFactor(const std::string& nameA, const std::string& nameB, co
 }
 
 bool EFG_model::AddFactor(const std::string& nameA, const std::string& nameB, const bool& corr_anti, const float& weight) {
+  if(nullptr == this->graph) this->graph = std::make_unique<EFG::model::Graph>();
   VariableFinder finderA(*this, nameA);
   if(nullptr == finderA.get()) return false;
   VariableFinder finderB(*this, nameB);

@@ -1,5 +1,5 @@
 add_subdirectory(Http-GUI/Lib)
-set(THREAD_POOL_OPT ON)
+# set(THREAD_POOL_OPT ON)
 add_subdirectory(EFG/Lib)
 
 add_executable(EFG-GUI 
