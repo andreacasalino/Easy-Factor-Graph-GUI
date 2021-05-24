@@ -30,16 +30,16 @@ class Interface{
             put_button(d, image, descr);
             return d;
         }
-        this.__buttons.push(create_button("./img_GUI/Query/O.svg" ,  "Set observed value"));
-        this.__buttons.push(create_button("./img_GUI/Query/I.svg" ,  "Compute marginals"));
-        this.__buttons.push(create_button("./img_GUI/Modify/P_m.svg" ,  "Add unary potential"));
+        this.__buttons.push(create_button("./image/Query/O.svg" ,  "Set observed value"));
+        this.__buttons.push(create_button("./image/Query/I.svg" ,  "Compute marginals"));
+        this.__buttons.push(create_button("./image/Modify/P_m.svg" ,  "Add unary potential"));
         this.__buttons.push(document.createElement("div"));
 
-        this.__buttons.push(create_button("./img_GUI/Modify/P_b.svg" ,  "Add binary potential"));
+        this.__buttons.push(create_button("./image/Modify/P_b.svg" ,  "Add binary potential"));
         
-        this.__vertical_P = new popup_vertical_menu(this.__buttons[3], H_panel, create_button("./img_GUI/Modify/P_b.svg" ,  "Add binary potential"));
+        this.__vertical_P = new popup_vertical_menu(this.__buttons[3], H_panel, create_button("./image/Modify/P_b.svg" ,  "Add binary potential"));
         
-        let binary_menu_C_S = [create_button("./img_GUI/Modify/P_b_T.svg" ,  "Add correlating potential") , create_button("./img_GUI/Modify/P_b_F.svg" ,  "Add anti-correlating potential"), create_button("./img_GUI/Modify/P_b_file.svg" ,  "Import binary shape from file")];
+        let binary_menu_C_S = [create_button("./image/Modify/P_b_T.svg" ,  "Add correlating potential") , create_button("./image/Modify/P_b_F.svg" ,  "Add anti-correlating potential"), create_button("./image/Modify/P_b_file.svg" ,  "Import binary shape from file")];
         let binary_menu_S = [binary_menu_C_S[2]];
         this.__vertical_P.add_menu(binary_menu_C_S);
         this.__vertical_P.add_menu(binary_menu_S);
