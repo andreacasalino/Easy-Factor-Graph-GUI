@@ -1,6 +1,6 @@
 #include <httplib.h>
 #include <iostream>
-#include <EFG-model.h>
+#include <GraphShell.h>
 
 using namespace httplib;
 using namespace std;
@@ -26,9 +26,9 @@ std::string getRequestName(const std::string& incompleteName) {
 int main() {
 
   Server svr;
-  EFG_model model;
+  GraphShell model;
 
-  const EFG_model::ResponseJSON nullResp;
+  const GraphJSON nullResp;
 
   REACTION("X", Import)
 
@@ -38,16 +38,28 @@ int main() {
 
   REACTION("M", RecomputeMap)
 
-  REACTION("O", SetObservations)
+  REACTION("O", ResetObservations)
 
   REACTION("P", AddFactor)
 
   REACTION("R", Export)
 
-  REACTION("Q", GetNodeInfo)
+  REACTION("Q", GetVariableInfo)
 
   REACTION("I", GetMarginals)
 
+  svr.Post(getRequestName("S").c_str(), [&model, &nullResp](const Request& req, Response& res) { \
+    std::cout << "request ID: " << "S" << std::endl;
+    res.set_header("Access-Control-Allow-Origin", "*");
+    GraphJSON resp;
+    std::unique_ptr<gui::json::structJSON> folder = std::make_unique<gui::json::structJSON>();
+    folder->addElement("folder", gui::json::String(SOURCE_FOLDER));
+    resp.setInfo(std::move(folder));
+    res.set_content(resp.str(), "text/plain");
+    std::cout << "response:" << std::endl << res.body << std::endl << std::endl;
+  });
+
+  cout << "Application started" << endl;
   svr.listen("localhost", 3000);
 
   return EXIT_FAILURE;

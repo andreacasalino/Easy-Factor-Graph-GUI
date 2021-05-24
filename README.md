@@ -11,7 +11,6 @@ The application is made of 2 big components:
 
 * initialize the git submodule with the 2 commands (from root) 
   * `git submodule update --init --recursive`
-  * `git submodule update --recursive --remote`
 
 * compile the [Cmake](https://cmake.org) project
   * after that, a backend application named **EFG-GUI** will be appear in root/App
