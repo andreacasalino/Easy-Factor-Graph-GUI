@@ -9,14 +9,15 @@ The application is made of 2 big components:
 
 **Compile**:
 
-* initialize the git submodule with the 2 commands (from root) 
+* initialize the git submodule with the following command (from root) 
   * `git submodule update --init --recursive`
 
-* compile the [Cmake](https://cmake.org) project
-  * after that, a backend application named **EFG-GUI** will be appear in root/App
+* compile the [Cmake](https://cmake.org) project an run the **INSTALL** command
+  * after that, the backend application named **EFG-GUI** will be appear in the installation folder, under bin
 
 **Run**:
 
-* got to root/App and launch the backend application **EFG-GUI**
+* got to the installation folder and then inside bin.
+* run the application named **EFG-GUI**
 * open in your favourite browser the script **EFG-GUI.html**
 * have fun with the GUI :)
