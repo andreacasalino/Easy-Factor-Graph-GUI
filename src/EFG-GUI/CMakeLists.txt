@@ -1,25 +1,34 @@
+set(PROJECT_SHORTNAME "EFG-GUI")
+
 CollectSourceFiles(${CMAKE_CURRENT_SOURCE_DIR} SOURCES)
 GroupSources(${CMAKE_CURRENT_SOURCE_DIR})
 
-add_executable(EFG-GUI ${SOURCES})
+add_executable(${PROJECT_SHORTNAME} ${SOURCES})
 
-target_include_directories(EFG-GUI 
+target_include_directories(${PROJECT_SHORTNAME} 
 PUBLIC 
 ${CMAKE_CURRENT_SOURCE_DIR}/header
 )
 
-target_link_libraries(EFG-GUI 
+target_link_libraries(${PROJECT_SHORTNAME} 
 PUBLIC
 Http-GUI
 EFG
 )
 
-target_compile_definitions(EFG-GUI 
+target_compile_definitions(${PROJECT_SHORTNAME}
 PUBLIC
 	-D SOURCE_FOLDER="${CMAKE_CURRENT_SOURCE_DIR}/"
 )
 
-install(TARGETS EFG-GUI)
+find_package(Threads)
+target_link_libraries(${PROJECT_SHORTNAME}
+    PRIVATE
+	${CMAKE_THREAD_LIBS_INIT}      
+)
+
+
+install(TARGETS ${PROJECT_SHORTNAME})
 install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/JS/ DESTINATION bin/JS)
 install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/image/ DESTINATION bin/image)
 install (FILES ${CMAKE_CURRENT_SOURCE_DIR}/EFG-GUI.html DESTINATION bin/)
