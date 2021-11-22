@@ -9,9 +9,6 @@ The application is made of 2 big components:
 
 **Compile**:
 
-* initialize the git submodule with the following command (from root) 
-  * `git submodule update --init --recursive`
-
 * compile the [Cmake](https://cmake.org) project an run the **INSTALL** command
   * after that, the backend application named **EFG-GUI** will be appear in the installation folder, under bin
 
