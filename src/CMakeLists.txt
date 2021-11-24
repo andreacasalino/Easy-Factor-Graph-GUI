@@ -38,6 +38,7 @@ EFG
 target_compile_definitions(${PROJECT_SHORTNAME}
 PUBLIC
 	-D SOURCE_FOLDER="${CMAKE_CURRENT_SOURCE_DIR}/"
+ 	-D EXAMPLE_FOLDER="${FETCHCONTENT_BASE_DIR}/efg_lib-src/Samples/"
 )
 
 find_package(Threads)

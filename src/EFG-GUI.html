@@ -76,14 +76,18 @@
             // panel_top.childNodes[2].addEventListener("click", function(){ Intrfc.send_download("B", ["f"], ["%download"]); });
             
             panel_modify.childNodes[0].addEventListener("click", function(){ 
-                let target_file = cin("Enter file name", sourceFolder + "../EFG/Samples/Sample03-BeliefPropagation-B/graph_3.xml");
-                if(target_file == null) return;
-                Intrfc.send_command("X",["f"],[target_file]); 
+                Intrfc.send_command("D",[],[], (default_example) =>{
+                    let target_file = cin("Enter file name", default_example);
+                    if(target_file == null) return;
+                    Intrfc.send_command("X",["f"],[target_file]); 
+                }); 
             });
             panel_modify.childNodes[1].addEventListener("click", function(){ 
-                let target_file = cin("Enter file name", sourceFolder + "../EFG/Samples/Sample03-BeliefPropagation-B/graph_2.xml");
-                if(target_file == null) return;
-                Intrfc.send_command("A",["f"],[target_file]); 
+                Intrfc.send_command("D",[],[], (default_example) =>{
+                    let target_file = cin("Enter file name", default_example);
+                    if(target_file == null) return;
+                    Intrfc.send_command("A",["f"],[target_file]); 
+                }); 
             });
             panel_modify.childNodes[2].addEventListener("click", function(){ 
                 let name = cin("Enter var name", "varA");
